@@ -22,7 +22,6 @@
 #define LEN 1000
 #endif
 
-
 struct hdr {
         struct hdr *prev, *next;
 };
@@ -182,4 +181,3 @@ int main(){
     }
 	return 0;
 }
-

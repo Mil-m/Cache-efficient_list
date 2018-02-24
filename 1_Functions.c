@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -23,117 +25,116 @@
 #endif
 
 struct hdr {
-        struct hdr *prev, *next;
+	struct hdr *prev, *next;
 };
 
 struct Elem {
-    int elem;
-    struct hdr  h;
+	int elem;
+	struct hdr  h;
 };
 
 inline struct Elem* hdr2elem(struct hdr* ph)
 {
-        return (struct Elem*) ( ((char*)ph) - offsetof(Elem,h) );
+	return (struct Elem*) (((char*)ph) - offsetof(Elem, h));
 }
 
 struct hdr root = { &root, &root };
 
-struct Elem* Pushafter(struct hdr *list, int x){
-        struct Elem *buf = (struct Elem*)malloc(sizeof(struct Elem));
+struct Elem* Pushafter(struct hdr *list, int x) {
+	struct Elem *buf = (struct Elem*)malloc(sizeof(struct Elem));
 
-        if ( buf ) {
-                buf->elem = x;
+	if (buf) {
+		buf->elem = x;
 
-                ( buf->h.next = list->next )->prev = &buf->h;
-                buf->h.prev = list;
-                list->next = &buf->h;
-        }
-        return buf;
-}
-
-struct Elem* Search(int x){
-    struct hdr *buf = root.next;
-
-    while ( buf != &root && hdr2elem(buf)->elem != x ) {
-        buf = buf->next;
-    }
-
-    return ( buf == &root ? (struct Elem*)0 : hdr2elem(buf) );
-}
-
-void PrintList(void){
-    struct Elem *buf = hdr2elem( root.next );
-
-	while ( buf != hdr2elem(&root) ) {
-		printf("%d ", buf->elem);
-		buf = hdr2elem( buf->h.next );
+		(buf->h.next = list->next)->prev = &buf->h;
+		buf->h.prev = list;
+		list->next = &buf->h;
 	}
-    printf("\n");
+	return buf;
 }
 
-void Delete(struct Elem *list){
-    list->h.prev->next = list->h.next;
-    list->h.next->prev = list->h.prev;
-    free(list);
+struct Elem* Search(int x) {
+	struct hdr *buf = root.next;
+
+	while (buf != &root && hdr2elem(buf)->elem != x) {
+		buf = buf->next;
+	}
+
+	return (buf == &root ? (struct Elem*)0 : hdr2elem(buf));
 }
 
-struct hdr* p[ NMAX+1 ];
+void PrintList(void) {
+	struct Elem *buf = hdr2elem(root.next);
 
-int main(){
-    int x, i = 0;
-    struct Elem *buf;
+	while (buf != hdr2elem(&root)) {
+		printf("%d ", buf->elem);
+		buf = hdr2elem(buf->h.next);
+	}
+	printf("\n");
+}
+
+void Delete(struct Elem *list) {
+	list->h.prev->next = list->h.next;
+	list->h.next->prev = list->h.prev;
+	free(list);
+}
+
+struct hdr* p[NMAX + 1];
+
+int main() {
+	int x, i = 0;
+	struct Elem *buf;
 #ifdef WIN32
-    long long tt, ttmp;
-    #define TM()    (QueryPerformanceCounter( (LARGE_INTEGER*)&ttmp ), ((double)ttmp)/tt)
+	long long tt, ttmp;
+#define TM()    (QueryPerformanceCounter( (LARGE_INTEGER*)&ttmp ), ((double)ttmp)/tt)
 #else
-    struct timespec tt;
-    #define TM()    (clock_gettime( CLOCK_THREAD_CPUTIME_ID, &tt ), (tt.tv_sec+1.e-9*tt.tv_nsec))
+	struct timespec tt;
+#define TM()    (clock_gettime( CLOCK_THREAD_CPUTIME_ID, &tt ), (tt.tv_sec+1.e-9*tt.tv_nsec))
 #endif
 
 #ifndef SKIP_TIME
-    double t0, t1, t2, t3, t4;
+	double t0, t1, t2, t3, t4;
 #endif
-    int     errs, N;
+	int     errs, N;
 
 #ifdef WIN32
-    QueryPerformanceFrequency( (LARGE_INTEGER*)&tt );
+	QueryPerformanceFrequency((LARGE_INTEGER*)&tt);
 #endif
-    for ( N=NMIN; N<=NMAX; N+=(N/5?N/5:1) ) {
+	for (N = NMIN; N <= NMAX; N += (N / 5 ? N / 5 : 1)) {
 #ifndef SKIP_TIME
-        t0 = TM();
+		t0 = TM();
 #endif
-        //p[0] = &root;
-        //for (i = 1; i <= N; i ++) {
-        //    p[i] = (struct hdr*)( rand()%i );
-        //}
+		//p[0] = &root;
+		//for (i = 1; i <= N; i ++) {
+		//    p[i] = (struct hdr*)( rand()%i );
+		//}
 
 #ifndef SKIP_TIME
-        t1 = TM();
+		t1 = TM();
 #endif
-        p[0] = &root;
-        for (i = 1; i <= N; i ++) {
-            p[i] = &(Pushafter( p[ rand()%i ], i)->h);
-        }
+		p[0] = &root;
+		for (i = 1; i <= N; i++) {
+			p[i] = &(Pushafter(p[rand() % i], i)->h);
+		}
 
 #ifndef SKIP_TIME
-        t2 = TM();
+		t2 = TM();
 #endif
-        errs = 0;
+		errs = 0;
 #ifndef SKIP_SEARCH
-        for (i = 1; i < N; i ++) {
-            buf = Search( x = rand() % N + 1 );
-            if ( !buf || buf->elem != x ) errs++;
-        }
+		for (i = 1; i < N; i++) {
+			buf = Search(x = rand() % N + 1);
+			if (!buf || buf->elem != x) errs++;
+		}
 #endif
 #ifndef SKIP_TIME
-        t3 = TM();
+		t3 = TM();
 #endif
-        while ( root.next != &root ) Delete( hdr2elem( root.next ) );
+		while (root.next != &root) Delete(hdr2elem(root.next));
 #ifndef SKIP_TIME
-        t4 = TM();
-        printf("%d; %G; %G; %G; %d\n", N, t2-2*t1+t0, t3-t2-t1+t0, t4-t3-t1+t0, errs );
+		t4 = TM();
+		printf("%d; %G; %G; %G; %d\n", N, t2 - 2 * t1 + t0, t3 - t2 - t1 + t0, t4 - t3 - t1 + t0, errs);
 #endif
-    }
+	}
 	return 0;
 }
-
